@@ -1,0 +1,4 @@
+npm start 本地前后
+npm dev 本地前
+npm server 本地后
+node server\index.js 网路前后
