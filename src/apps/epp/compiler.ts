@@ -5,6 +5,7 @@ import { dialog } from '../../desktop/Dialog'
 import { showOpenFileDialog, showSaveFileDialog } from '../../desktop/FileDialog'
 import { getCommandRegistry } from '../../kernel/CommandRegistry'
 import { compileCode, compileProject, loadProject } from './compiler-core'
+import { G3D } from './g3d'
 import type { EPPFile, EPPManifest, EPPProject, EPPRuntimeAPI, EPPSolution, CompileConfig } from './types'
 
 const APP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="2" y1="8" x2="22" y2="8"/></svg>'
@@ -1527,6 +1528,38 @@ function createRuntimeAPI(
   let activeWindowContent: HTMLElement | null = null
   const timers: number[] = []
 
+  // 3D 引擎实例：注入容器提供者（在 epp-runner 窗口中创建 3D 画布）
+  const g3d = new G3D()
+  g3d.setContainerProvider((width, height, title) => {
+    const winId = wm.openApp('epp-runner', {
+      manifest: {
+        name: title || '3D 场景',
+        version: '1.0.0',
+        defaultWidth: width || 640,
+        defaultHeight: height || 480,
+        entry: 'main'
+      },
+      bytecode: btoa(encodeURIComponent(JSON.stringify({
+        manifest: { name: title || '3D 场景', version: '1.0.0', entry: 'main' },
+        code: ''
+      })))
+    })
+    if (!winId) return null
+    const w = wm.getWindow(winId)
+    if (!w) return null
+    if (width) { w.width = width; w.element.style.width = width + 'px' }
+    if (height) { w.height = height; w.element.style.height = height + 'px' }
+    activeWindowId = winId
+    const c = w.content.querySelector('.epp-runner-content') as HTMLElement
+    if (c) {
+      activeWindowContent = c
+      // 窗口关闭时停止 3D 渲染，释放资源
+      w.onClose(() => g3d.close())
+      return c
+    }
+    return null
+  })
+
   return {
     print: (text) => {
       const last = output.lastElementChild
@@ -1873,7 +1906,8 @@ function createRuntimeAPI(
     },
     random: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
     getScreenWidth: () => window.innerWidth,
-    getScreenHeight: () => window.innerHeight
+    getScreenHeight: () => window.innerHeight,
+    g3d
   }
 }
 
@@ -1922,7 +1956,7 @@ export function openESolutionFile(wm: WindowManager, _fs: FileSystem, filePath: 
 async function executeCode(code: string, api: EPPRuntimeAPI): Promise<void> {
   const wrapped = `
     "use strict";
-    const { print, println, readLine, showMessage, showConfirm, showPrompt, showOpenDialog, showSaveDialog, showFolderDialog, createWindow, openWindow, closeWindow, setWindowTitle, setWindowContent, setWindowSize, getWindowSize, centerWindow, minimizeWindow, maximizeWindow, isWindowMaximized, onWindowClose, getElementById, createElement, appendElement, onEvent, readFile, writeFile, listFiles, createDirectory, deleteFile, fileExists, copyFile, moveFile, setTimeout, setInterval, clearTimeout, clearInterval, httpRequest, clipboardWrite, clipboardRead, getEnv, setEnv, getTimestamp, formatDate, random, getScreenWidth, getScreenHeight } = this;
+    const { print, println, readLine, showMessage, showConfirm, showPrompt, showOpenDialog, showSaveDialog, showFolderDialog, createWindow, openWindow, closeWindow, setWindowTitle, setWindowContent, setWindowSize, getWindowSize, centerWindow, minimizeWindow, maximizeWindow, isWindowMaximized, onWindowClose, getElementById, createElement, appendElement, onEvent, readFile, writeFile, listFiles, createDirectory, deleteFile, fileExists, copyFile, moveFile, setTimeout, setInterval, clearTimeout, clearInterval, httpRequest, clipboardWrite, clipboardRead, getEnv, setEnv, getTimestamp, formatDate, random, getScreenWidth, getScreenHeight, g3d } = this;
     return (async function() {
       ${code}
     })();

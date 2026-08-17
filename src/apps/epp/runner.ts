@@ -1,6 +1,7 @@
 import { WindowManager } from '../../wm/WindowManager'
 import { FileSystem } from '../../fs/FileSystem'
 import { dialog } from '../../desktop/Dialog'
+import { G3D } from './g3d'
 import type { EPPFile } from './types'
 
 const APP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
@@ -82,6 +83,21 @@ function runStandaloneCode(
   let activeWindowId: string | null = null
   let activeWindowContent: HTMLElement | null = container
   const timers: number[] = []
+
+  // 3D 引擎实例：注入容器提供者，供 g3d.createWindow 使用
+  const g3d = new G3D()
+  g3d.setContainerProvider((width, height, title) => {
+    win.setTitle(title || '3D 场景')
+    if (width) { win.width = width; win.updateSize() }
+    if (height) { win.height = height; win.updateSize() }
+    container.className = 'epp-runner-content epp-runner-gui'
+    container.innerHTML = ''
+    activeWindowContent = container
+    activeWindowId = null
+    return container
+  })
+  // 窗口关闭时停止渲染循环，释放资源
+  win.onClose(() => g3d.close())
 
   const api = {
     print: (text: string) => {
@@ -392,13 +408,14 @@ function runStandaloneCode(
     },
     random: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
     getScreenWidth: () => window.innerWidth,
-    getScreenHeight: () => window.innerHeight
+    getScreenHeight: () => window.innerHeight,
+    g3d
   }
 
   try {
     const wrapped = `
       "use strict";
-      const { print, println, readLine, showMessage, showConfirm, showPrompt, showOpenDialog, showSaveDialog, showFolderDialog, createWindow, openWindow, closeWindow, setWindowTitle, setWindowContent, setWindowSize, getWindowSize, centerWindow, minimizeWindow, maximizeWindow, isWindowMaximized, onWindowClose, getElementById, createElement, appendElement, onEvent, readFile, writeFile, listFiles, createDirectory, deleteFile, fileExists, copyFile, moveFile, setTimeout, setInterval, clearTimeout, clearInterval, httpRequest, clipboardWrite, clipboardRead, getEnv, setEnv, getTimestamp, formatDate, random, getScreenWidth, getScreenHeight } = this;
+      const { print, println, readLine, showMessage, showConfirm, showPrompt, showOpenDialog, showSaveDialog, showFolderDialog, createWindow, openWindow, closeWindow, setWindowTitle, setWindowContent, setWindowSize, getWindowSize, centerWindow, minimizeWindow, maximizeWindow, isWindowMaximized, onWindowClose, getElementById, createElement, appendElement, onEvent, readFile, writeFile, listFiles, createDirectory, deleteFile, fileExists, copyFile, moveFile, setTimeout, setInterval, clearTimeout, clearInterval, httpRequest, clipboardWrite, clipboardRead, getEnv, setEnv, getTimestamp, formatDate, random, getScreenWidth, getScreenHeight, g3d } = this;
       return (async function() {
         ${code}
       })();

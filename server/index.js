@@ -68,7 +68,8 @@ function getUserRoot(req, res) {
         '技术栈：\n' +
         '- TypeScript 5\n' +
         '- Vite 5\n' +
-        '- Express.js（文件系统后端）\n' +
+        '- IndexedDB（浏览器端文件系统持久化）\n' +
+        '- Express.js（可选后端文件系统服务）\n' +
         '- localStorage（设置持久化）\n' +
         '- 原生 DOM API（窗口管理）\n\n' +
         'License: MIT',
@@ -83,7 +84,7 @@ function getUserRoot(req, res) {
         '构建: 稳定版\n' +
         '内核: HT Kernel 1.0\n' +
         '窗口系统: HT Window Manager\n' +
-        '文件系统: HT Virtual File System',
+        '文件系统: HT Virtual File System (IndexedDB + Express.js)',
         'utf-8')
     } catch { /* ignore */ }
 
@@ -97,16 +98,16 @@ function getUserRoot(req, res) {
     try {
       fs.writeFileSync(path.join(adminRoot, 'Desktop', 'welcome.txt'),
         '欢迎使用 HT OS!\n\n' +
-        '这是一个基于 TypeScript 的网页操作系统，所有数据都通过 IndexedDB 真正持久化存储。\n\n' +
+        '这是一个基于 TypeScript 的网页操作系统，所有数据都通过 IndexedDB 真正持久化存储，也可配合内置后端服务同步到服务器磁盘。\n\n' +
         '功能包括：\n' +
         '- 完整的窗口管理系统（拖动、调整大小、最大化、最小化）\n' +
         '- 基于 IndexedDB 的虚拟文件系统（持久化）\n' +
-        '- 桌面环境（图标、右键菜单、壁纸）\n' +
-        '- 任务栏与开始菜单\n' +
+        '- 桌面环境（图标、右键菜单、壁纸、文件/文件夹拖拽）\n' +
+        '- 任务栏与开始菜单、全屏应用资源库\n' +
         '- 启动画面与登录界面\n' +
-        '- 多种应用程序（文件管理器、终端、记事本、计算器等）\n' +
+        '- 多种应用程序（文件管理器、浏览器、HT 办公、终端、记事本、画图、音乐、视频、计算器等）\n' +
         '- EPP 专属应用程序系统（.e 源代码 / .epp 可执行文件）\n' +
-        '- 画质增强模拟 (DLSS / FSR3 / MetalFX)\n\n' +
+        '- EPP 内置 3D 游戏引擎（g3d），可直接开发 3D 游戏\n\n' +
         '试试双击桌面图标，或者点击左下角开始按钮开始体验吧！',
         'utf-8')
     } catch { /* ignore */ }
@@ -174,7 +175,16 @@ function getUserRoot(req, res) {
     if (!fs.existsSync(aboutFile)) {
       try {
         fs.writeFileSync(aboutFile,
-          'HT OS v1.0.0\n\n一个使用 TypeScript + Vite 开发的网页操作系统。',
+          'HT OS v1.0.0\n\n' +
+          '一个使用 TypeScript + Vite 开发的网页操作系统。\n\n' +
+          '技术栈：\n' +
+          '- TypeScript 5\n' +
+          '- Vite 5\n' +
+          '- IndexedDB（浏览器端文件系统持久化）\n' +
+          '- Express.js（可选后端文件系统服务）\n' +
+          '- localStorage（设置持久化）\n' +
+          '- 原生 DOM API（窗口管理）\n\n' +
+          'License: MIT',
           'utf-8')
       } catch { /* ignore */ }
     }
@@ -1033,6 +1043,17 @@ function getSafeFileName(dir, fileName) {
 }
 
 function getEPPGuideContent() {
+  // 优先读取 docs/EPP_Programming_Guide.md（随仓库文档同步更新）
+  try {
+    const guidePath = path.join(__dirname, '..', 'docs', 'EPP_Programming_Guide.md')
+    if (fs.existsSync(guidePath)) {
+      return fs.readFileSync(guidePath, 'utf-8')
+    }
+  } catch { /* ignore */ }
+  return getEPPGuideFallback()
+}
+
+function getEPPGuideFallback() {
   return `# EPP 程序编写规范和指南
 
 ## 概述

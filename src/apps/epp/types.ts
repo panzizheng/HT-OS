@@ -68,7 +68,6 @@ export interface EPPRuntimeAPI {
   print(text: string): void
   println(text: string): void
   readLine(prompt?: string): Promise<string>
-
   // === 对话框 ===
   showMessage(title: string, message: string): void
   showConfirm(title: string, message: string): Promise<boolean>
@@ -159,4 +158,8 @@ export interface EPPRuntimeAPI {
   random(min: number, max: number): number
   getScreenWidth(): number
   getScreenHeight(): number
+
+  // === 3D 游戏 ===
+  /** 3D 场景引擎（g3d 对象），用于开发 3D 游戏 */
+  g3d: import('./g3d').G3D
 }

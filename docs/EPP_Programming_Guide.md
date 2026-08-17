@@ -510,6 +510,95 @@ println('屏幕高度: ' + getScreenHeight())
 
 ---
 
+### 3D 游戏（g3d）
+
+EPP 内置了自研的 WebGL 3D 引擎 `g3d`，可直接开发 3D 游戏，无需任何外部库。
+通过 `g3d.createWindow()` 打开 3D 窗口后，创建几何体、设置变换与颜色，再用 `g3d.animate()` 实现游戏逻辑。鼠标左键拖拽可环绕观察场景，滚轮缩放（可用 `g3d.enableOrbit(false)` 关闭）。
+
+#### createWindow(width, height, title?) -> boolean
+创建 3D 窗口并开始渲染。
+```javascript
+g3d.createWindow(800, 600, '我的 3D 游戏')
+```
+
+#### 几何体
+| 函数 | 说明 |
+|------|------|
+| `g3d.createCube(w?, h?, d?) -> id` | 创建立方体 |
+| `g3d.createSphere(radius?, segments?) -> id` | 创建球体 |
+| `g3d.createPlane(width?, depth?) -> id` | 创建平面（常作地面） |
+| `g3d.remove(id)` | 删除物体 |
+| `g3d.clear()` | 清空所有物体 |
+| `g3d.count() -> number` | 物体数量 |
+
+#### 变换
+| 函数 | 说明 |
+|------|------|
+| `g3d.setPosition(id, x, y, z)` | 设置位置 |
+| `g3d.setRotation(id, rx, ry, rz)` | 设置旋转（弧度） |
+| `g3d.setScale(id, sx, sy, sz)` | 设置缩放 |
+| `g3d.translate(id, dx, dy, dz)` | 平移增量 |
+| `g3d.rotate(id, drx, dry, drz)` | 旋转增量（弧度） |
+
+#### 外观
+| 函数 | 说明 |
+|------|------|
+| `g3d.setColor(id, r, g, b, a?)` | 设置颜色（0-1） |
+| `g3d.setWireframe(id, bool)` | 线框模式 |
+| `g3d.setVisible(id, bool)` | 显示 / 隐藏 |
+
+#### 相机与环境
+| 函数 | 说明 |
+|------|------|
+| `g3d.setCamera(x, y, z)` | 设置相机位置（看向目标点） |
+| `g3d.lookAt(x, y, z)` | 设置观察目标点 |
+| `g3d.setDistance(d)` | 相机到目标点的距离 |
+| `g3d.setFov(deg)` | 视野角度 |
+| `g3d.setBackground(r, g, b)` | 背景色（0-1） |
+| `g3d.setLightDirection(x, y, z)` | 光照方向 |
+| `g3d.enableOrbit(bool)` | 是否启用鼠标环绕观察 |
+
+#### 动画与时间
+| 函数 | 说明 |
+|------|------|
+| `g3d.start()` / `g3d.stop()` | 开始 / 停止渲染 |
+| `g3d.animate(callback)` | 每帧调用回调（实现游戏逻辑） |
+| `g3d.clearAnimate()` | 清除所有动画回调 |
+| `g3d.getTime() -> number` | 运行时间（秒） |
+| `g3d.getDelta() -> number` | 上一帧耗时（秒） |
+
+#### 输入事件
+`g3d.onMouseDown(cb)`、`g3d.onMouseMove(cb)`、`g3d.onMouseUp(cb)`、`g3d.onWheel(cb)`
+回调参数为 `{ x, y, button, dx, dy }`。
+```javascript
+g3d.onMouseDown(function(e) {
+  println('鼠标点击: ' + e.x + ', ' + e.y)
+})
+```
+
+#### 3D 游戏示例
+```javascript
+// 创建一个旋转的 3D 方块
+g3d.createWindow(800, 600, '旋转方块')
+g3d.setBackground(0.1, 0.15, 0.3)
+
+const cube = g3d.createCube(1, 1, 1)
+g3d.setColor(cube, 0.9, 0.2, 0.2)     // 红色
+g3d.setPosition(cube, 0, 0.8, 0)
+
+const ground = g3d.createPlane(8, 8)  // 地面
+g3d.setColor(ground, 0.25, 0.45, 0.3)
+
+let t = 0
+g3d.animate(function() {
+  t = t + g3d.getDelta()
+  g3d.rotate(cube, 0.8 * g3d.getDelta(), 1.2 * g3d.getDelta(), 0)
+  g3d.setPosition(cube, Math.sin(t), 1.0 + Math.abs(Math.sin(t * 2)) * 0.6, 0)
+})
+```
+
+---
+
 ## 完整示例
 
 ### 控制台程序示例
